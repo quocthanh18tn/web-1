@@ -63,6 +63,13 @@ function displayControls(isLogin = true) {
     linkLogins[i].style.display = displayLogin;
     linkLogouts[i].style.display = displayLogout;
   }
+
+  setTimeout(() => {
+    let leaveComment = document.getElementById('leave-comment');
+    if (leaveComment) {
+      leaveComment.style.display = displayLogout;
+    }
+  }, 500);
 }
 
 async function checkLogin() {
@@ -83,6 +90,7 @@ async function verifyToken() {
     });
     if (response.status == 200) return true;
   }
+  localStorage.clear();
   return false;
 }
 

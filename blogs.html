@@ -220,9 +220,10 @@
       <img src="{{imagepath}}" alt="{{name}}" class="float-start-me-3 rounded-4">
       <p class="text-black-50">{{{description}}}</p>
     </div>
-    <div class="py-3">
+    <div class="py-3" id="leave-comment">
       <h3>Leave your comments</h3>
-      <form action="#" method="post" class="text-black-50">
+      <form action="#" method="post" class="text-black-50" onsubmit="addComment(event)">
+        <input type="hidden" name="blogId" id="blogId" value="{{id}}">
         <div class="row">
           <div class="col-4">
             <div class="mb-3">
@@ -230,6 +231,8 @@
               <input type="text"
                 class="form-control" name="name" id="name" placeholder="" required>
             </div>
+            </div>
+          <div class="col-4">
             <div class="mb-3">
               <label for="email" class="form-label">Email</label>
               <input type="text"
@@ -241,7 +244,7 @@
         </div>
         <div>
           <div class="mb-3">
-            <textarea class="form-control" name="message" id="message"
+            <textarea class="form-control" name="message" id="comment"
                       rows="3" placeholder="Enter your message" required>
             </textarea>
           </div>
@@ -258,6 +261,9 @@
           </div>
         </div>
       </form>
+      <div class="text-center">
+        <div class="text-success" id="responseMessage"></div>
+      </div>
     </div>
 
     <a name="comments"></a>
@@ -278,7 +284,6 @@
   </script>
 
   <script>
-    checkLogin();
     Handlebars.registerHelper('formatDate', function (date) {
       let formatDate = new Date(date);
       let options = {
@@ -300,13 +305,49 @@
       var view = document.getElementById('blogs');
       view.innerHTML = template(context);
     };
+    checkLogin();
     loadBlogs('blogs');
     loadData('blogs-categories', 'blogs-categories-template', 'blogs-categories')
-
     function loadBlogDetails(blogId, goToComments = false) {
       loadData(`blogs/${blogId}`, 'details-template', 'blogs');
+      checkLogin();
       if (goToComments) {
-        window.location.href = "#comments";
+        setTimeout(() => {
+          window.location.href = "#comments";
+        }, 500);
+      }
+    }
+    async function addComment(e) {
+      e.preventDefault();
+
+      let token = localStorage.getItem('token');
+      let postData = {
+        name: document.getElementById('name').value,
+        email: document.getElementById('email').value,
+        comment: document.getElementById('comment').value,
+        blogId: document.getElementById('blogId').value,
+        agree: (document.getElementById('agree').value == 1),
+      }
+      let responseMessage = document.getElementById('responseMessage');
+      try {
+        let response = await fetch(`${AUTHENTICATE_API}/comment`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
+            Authorization: 'Bearer ' + token,
+          },
+          body: JSON.stringify(postData),
+        })
+        let result = await response.json();
+        if (response.status == 200) {
+          loadBlogDetails(postData.blogId, true);
+        } else {
+          throw new Error(result.message);
+        }
+      } catch (error) {
+        responseMessage.innerHTML = result.message;
+        responseMessage.className = 'text-danger';
       }
     }
   </script>
