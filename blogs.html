@@ -76,6 +76,8 @@
     <div class="row">
       <div class="col-lg-8 col-md-12" id="blogs">
       </div>
+      <div class="col-lg-8 col-md-12" id="tmp">
+      </div>
       <div class="col-lg-4 col-md-12" id="blogs-categories">
       </div>
     </div>
@@ -104,7 +106,7 @@
         <a class="nav-link linkLogout" href="#" onclick="logout()" style="display:none">Logout</a>
       </li>
     </ul>
-    <p class="text-white-50">Copyright &copy; 2023 by Phan Quoc Thanh - MSSV</p>
+    <p class="text-white-50">Copyright &copy; 2023 by Phan Quoc Thanh - 21880275</p>
   </footer>
 
   <!-- Modal Login -->
@@ -156,17 +158,17 @@
       <h3>{{name}}</h3>
       <p class="text-black-50">
         by {{author}} in
-        <a href="#" onclick="loadBlogs('blogs/categories/{{category.id}}')">
+        <a href="#blogs/categories/{{category.id}}" onclick="loadBlogs('blogs/categories/{{category.id}}')">
           {{category.name}}
         </a>
          Category on {{formatDate date}}.
-         <a href="#" onclick="loadBlogDetails({{id}}, true)">
+         <a href="#{{id}}" onclick="loadBlogDetails({{id}}, true)">
           Comments({{comments.length}})
         </a>
       </p>
       <img src="{{thumbpath}}" alt="{{name}}" class="float-start me-3 border rounded-4 ">
       <p class="text-black-50">{{summary}}</p>
-      <a href="#" class="btn btn-link readmore ps-0" onclick="loadBlogDetails({{id}})">
+      <a href="#{{id}}" class="btn btn-link readmore ps-0" onclick="loadBlogDetails({{id}})">
         Read more
       </a>
     </div>
@@ -178,12 +180,12 @@
         {{#each pages}}
         {{#if isCurrent}}
         <li class="page-item disabled" aria-current="page">
-          <a class="page-link" href="#" onclick="loadBlogs('{{../../request}}', {{page}})">{{page}}</a>
+          <a class="page-link" href="#{{../../request}}" onclick="loadBlogs('{{../../request}}', {{page}})">{{page}}</a>
         </li>
         {{/if}}
         {{#unless isCurrent}}
         <li class="page-item">
-          <a class="page-link" href="#" onclick="loadBlogs('{{../../request}}', {{page}})">
+          <a class="page-link" href="#{{../../request}}" onclick="loadBlogs('{{../../request}}', {{page}})">
             {{page}}
           </a>
         </li>
@@ -199,7 +201,7 @@
         <ul class="py-3">
           {{#each data}}
           <li>
-            <a class="text-black-50 text-decoration-none" href="#" onclick="loadBlogs('blogs/categories/{{id}}')">
+            <a class="text-black-50 text-decoration-none" href="#blogs/categories/{{id}}" onclick="loadBlogs('blogs/categories/{{id}}')">
               {{name}}
             </a>
           </li>
@@ -296,6 +298,19 @@
       }
       return formatDate.toLocaleString('en-US', options);
     })
+    checkLogin();
+    if (location.hash == '' || location.hash == '#') loadPage();
+    else if (isNaN(location.hash.substr(1))) loadBlogs(location.hash.substr(1));
+    else loadBlogDetails(location.hash.substr(1));
+
+    async function loadPage() {
+      document.getElementById('blogs').style.display = 'block';
+      document.getElementById('tmp').style.display = 'none';
+      await loadBlogs('blogs');
+      await loadData('blogs-categories', 'blogs-categories-template', 'blogs-categories')
+      history.replaceState({ loadPage: 1 }, null, location.href);
+    }
+
     async function loadBlogs(request, currentPage = 1) {
       const response = await fetch(`${API}/${request}?page=${currentPage}`);
       const context = await response.json();
@@ -305,12 +320,12 @@
       var template = Handlebars.compile(source);
       var view = document.getElementById('blogs');
       view.innerHTML = template(context);
+      history.replaceState({ request }, null, location.href);
+
     };
-    checkLogin();
-    loadBlogs('blogs');
-    loadData('blogs-categories', 'blogs-categories-template', 'blogs-categories')
-    function loadBlogDetails(blogId, goToComments = false) {
-      loadData(`blogs/${blogId}`, 'details-template', 'blogs');
+    async function loadBlogDetails(blogId, goToComments = false) {
+      await loadData(`blogs/${blogId}`, 'details-template', 'blogs');
+      history.replaceState({ request: blogId }, null, location.href);
       checkLogin();
       if (goToComments) {
         setTimeout(() => {
@@ -350,6 +365,12 @@
         responseMessage.innerHTML = result.message;
         responseMessage.className = 'text-danger';
       }
+    }
+    window.onpopstate = (event) => {
+      let state = event.state;
+      if (state && state.loadPage) loadPage();
+      else if (state && state.request && isNaN(state.request)) loadBlogs(location.hash.substr(1));
+      else if (state && state.request) loadBlogDetails(state.request);
     }
   </script>
 </body>

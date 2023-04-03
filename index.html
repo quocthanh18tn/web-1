@@ -70,6 +70,8 @@
     </nav>
   </header>
   <div id="content">
+  </div>
+  <div id="main">
     <!-- banner -->
     <section class="container-fluid" id="banner">
       <div class="container text-white text-center">
@@ -179,7 +181,7 @@
       </li>
     </ul>
     <p class="text-white-50">
-      Copyright &copy; 2023 by Phan Quoc Thanh - MSSV
+      Copyright &copy; 2023 by Phan Quoc Thanh - 21880275
     </p>
   </footer>
 
@@ -238,9 +240,9 @@
             <h3>{{name}}</h3>
             <p class="text-black-50">{{summary}}</p>
             <a
-              href='#'
+              href='#products/{{id}}'
               class='readmore btn btn-link pt-0'
-              onclick="loadData('products/{{id}}', 'details-template', 'content')"
+              onclick="loadDetails('products/{{id}}', 'details-template', 'content')"
             >Read more</a>
           </div>
         {{/each}}
@@ -257,9 +259,9 @@
                 <h3>{{date}}</h3>
               </div>
               <a
-                href='#'
+                href='#news/{{id}}'
                 class='btn btn-link readmore ps-0'
-                onclick="loadData('news/{{id}}', 'details-template', 'content')"
+                onclick="loadDetails('news/{{id}}', 'details-template', 'content')"
               >Read more</a>
             </div>
             <div>
@@ -283,8 +285,30 @@
 
   <script>
     checkLogin();
-    loadData('products', 'products-template', 'products');
+    if (location.hash == '' || location.hash == '#') loadPage();
+    else loadDetails(location.hash.substr(1), 'details-template', 'content');
+
+    function loadPage() {
+      document.getElementById('main').style.display = 'block';
+      document.getElementById('content').style.display = 'none';
+      loadData('products', 'products-template', 'products');
     loadData('news', 'news-template', 'news');
+      history.replaceState({ loadPage: 1 }, null, location.href);
+    }
+
+    async function loadDetails(request, templateId, viewId) {
+      document.getElementById('main').style.display = 'none';
+      document.getElementById('content').style.display = 'block';
+      await loadData(request, templateId, viewId);
+      history.replaceState({ request, templateId, viewId }, null, location.href);
+    }
+
+    window.onpopstate = (event) => {
+      let state = event.state;
+      if (state && state.loadPage) loadPage();
+      else if (state && state.request) loadDetails(state.request, state.templateId, state.viewId);
+    }
+
     function setActiveImagePath(img, imagepath, isActive = true) {
       if (isActive) {
         img.src = imagepath.replace('.', '-active.');
